@@ -1,0 +1,837 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[UTF8]{ctex}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray},
+    stringstyle=\color{orange},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    frameround=fttt,
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    captionpos=b,
+    xleftmargin=2em,
+    xrightmargin=1em,
+    aboveskip=1em,
+    belowskip=1em
+}
+
+\tcbuselibrary{skins,breakable}
+\newtcolorbox{knowledgebox}[1][]{
+    colback=blue!5!white,
+    colframe=blue!50!black,
+    fonttitle=\bfseries,
+    title=#1,
+    breakable
+}
+
+\newtcolorbox{practicebox}[1][]{
+    colback=green!5!white,
+    colframe=green!50!black,
+    fonttitle=\bfseries,
+    title=#1,
+    breakable
+}
+
+\newtcolorbox{tipbox}[1][]{
+    colback=yellow!10!white,
+    colframe=orange!70!black,
+    fonttitle=\bfseries,
+    title=#1,
+    breakable
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    bookmarks=true,
+    pdfstartview=FitH
+}
+
+\title{\textbf{Pandas数据处理实战手册}\\[0.5em]\large 基于真实数据案例}
+\author{竞赛培训组}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+%========================================
+\section{四个练习数据文件介绍}
+%========================================
+
+\subsection{数据文件概览}
+
+本手册所有示例代码都围绕以下\textbf{四个CSV文件}展开，请确保这些文件和代码在同一目录下：
+
+\begin{table}[H]
+\centering
+\caption{练习数据文件说明}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{文件名} & \textbf{数据量} & \textbf{主题} & \textbf{主要问题} \\
+\hline
+01\_电商订单数据\_练习.csv & 50行 & 电商订单 & 重复、缺失、异常值、格式混乱 \\
+\hline
+02\_传感器数据\_练习.csv & 144行 & 传感器读数 & 时间序列、格式问题 \\
+\hline
+03\_缺失值处理\_练习.csv & 30行 & 员工信息 & 各种缺失值场景 \\
+\hline
+04\_数据格式清洗\_练习.csv & 30行 & 用户信息 & 格式不统一、单位混乱 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{01\_电商订单数据\_练习.csv}
+
+\begin{knowledgebox}[数据字段说明]
+\begin{itemize}
+    \item \textbf{order\_id}：订单编号
+    \item \textbf{user\_id}：用户ID（部分缺失）
+    \item \textbf{product\_name}：商品名称
+    \item \textbf{price}：价格（带"元"单位）
+    \item \textbf{quantity}：数量（有负数异常值）
+    \item \textbf{order\_date}：订单日期（多种格式）
+    \item \textbf{address}：地址
+    \item \textbf{phone}：手机号（带横线）
+    \item \textbf{tags}：商品标签（JSON格式）
+\end{itemize}
+\end{knowledgebox}
+
+\subsection{02\_传感器数据\_练习.csv}
+
+\begin{knowledgebox}[数据字段说明]
+\begin{itemize}
+    \item \textbf{timestamp}：时间戳
+    \item \textbf{sensor\_id}：传感器ID
+    \item \textbf{temperature}：温度
+    \item \textbf{humidity}：湿度（部分缺失）
+    \item \textbf{pressure}：压力
+    \item \textbf{status}：设备状态
+\end{itemize}
+\end{knowledgebox}
+
+\subsection{03\_缺失值处理\_练习.csv}
+
+\begin{knowledgebox}[数据字段说明]
+\begin{itemize}
+    \item \textbf{id}：编号
+    \item \textbf{name}：姓名
+    \item \textbf{age}：年龄（部分缺失）
+    \item \textbf{gender}：性别（部分缺失）
+    \item \textbf{salary}：工资（部分缺失）
+    \item \textbf{department}：部门（部分缺失）
+    \item \textbf{join\_date}：入职日期（部分缺失）
+    \item \textbf{phone}：电话
+    \item \textbf{email}：邮箱
+    \item \textbf{score}：评分（部分缺失）
+\end{itemize}
+\end{knowledgebox}
+
+\subsection{04\_数据格式清洗\_练习.csv}
+
+\begin{knowledgebox}[数据字段说明]
+\begin{itemize}
+    \item \textbf{id}：编号
+    \item \textbf{name}：姓名（带空格）
+    \item \textbf{birth\_date}：出生日期（多种格式）
+    \item \textbf{height}：身高（带单位）
+    \item \textbf{weight}：体重（带单位）
+    \item \textbf{income}：收入（带k单位）
+    \item \textbf{phone}：电话
+    \item \textbf{address}：地址
+    \item \textbf{product\_tags}：商品标签
+\end{itemize}
+\end{knowledgebox}
+
+%========================================
+\section{Python与Pandas基础}
+%========================================
+
+\subsection{安装与导入}
+
+\begin{lstlisting}[caption={安装Pandas}]
+# 在命令行中运行
+pip install pandas
+\end{lstlisting}
+
+\begin{lstlisting}[caption={导入Pandas}]
+import pandas as pd
+import numpy as np
+\end{lstlisting}
+
+\subsection{读取CSV文件}
+
+\begin{knowledgebox}[知识点：pd.read\_csv()]
+这是Pandas中最常用的函数，用于读取CSV文件。
+\end{knowledgebox}
+
+\begin{lstlisting}[caption={读取四个练习文件}]
+# 读取电商订单数据
+df\_order = pd.read\_csv('01\_电商订单数据\_练习.csv')
+
+# 读取传感器数据
+df\_sensor = pd.read\_csv('02\_传感器数据\_练习.csv')
+
+# 读取缺失值练习数据
+df\_missing = pd.read\_csv('03\_缺失值处理\_练习.csv')
+
+# 读取格式清洗练习数据
+df\_messy = pd.read\_csv('04\_数据格式清洗\_练习.csv')
+\end{lstlisting}
+
+\begin{practicebox}[动手练习1：读取并查看数据]
+\textbf{任务：}读取四个CSV文件，查看每个文件的基本信息。
+
+\begin{lstlisting}
+import pandas as pd
+
+# 读取四个文件
+df\_order = pd.read\_csv('01\_电商订单数据\_练习.csv')
+df\_sensor = pd.read\_csv('02\_传感器数据\_练习.csv')
+df\_missing = pd.read\_csv('03\_缺失值处理\_练习.csv')
+df\_messy = pd.read\_csv('04\_数据格式清洗\_练习.csv')
+
+# 查看电商订单数据的形状
+print("电商订单数据形状：", df\_order.shape)
+print("\n前5行：")
+print(df\_order.head())
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{数据查看与探索}
+%========================================
+
+\subsection{查看数据基本信息}
+
+\begin{lstlisting}[caption={查看数据形状和列名}]
+# 查看数据形状（行数，列数）
+print(df\_order.shape)
+
+# 查看列名
+print(df\_order.columns)
+
+# 查看数据类型
+print(df\_order.dtypes)
+\end{lstlisting}
+
+\subsection{查看数据内容}
+
+\begin{lstlisting}[caption={查看数据内容}]
+# 查看前5行
+print(df\_order.head())
+
+# 查看后5行
+print(df\_order.tail())
+
+# 查看前10行
+print(df\_order.head(10))
+\end{lstlisting}
+
+\subsection{统计信息}
+
+\begin{lstlisting}[caption={使用describe()查看统计信息}]
+# 查看数值列的统计信息
+print(df\_order.describe())
+
+# 查看缺失值统计
+print(df\_order.isnull().sum())
+\end{lstlisting}
+
+\begin{practicebox}[动手练习2：探索传感器数据]
+\textbf{任务：}使用02\_传感器数据\_练习.csv，查看数据的基本统计信息。
+
+\begin{lstlisting}
+import pandas as pd
+
+df\_sensor = pd.read\_csv('02\_传感器数据\_练习.csv')
+
+# 查看形状
+print("数据形状：", df\_sensor.shape)
+
+# 查看统计信息
+print("\n统计摘要：")
+print(df\_sensor.describe())
+
+# 查看有多少个不同的传感器
+print("\n传感器数量：", df\_sensor['sensor\_id'].nunique())
+print("传感器列表：", df\_sensor['sensor\_id'].unique())
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{数据选择}
+%========================================
+
+\subsection{选择列}
+
+\begin{lstlisting}[caption={选择单列和多列}]
+# 选择单列（商品名称）
+products = df\_order['product\_name']
+
+# 选择多列（订单ID、商品名称、价格）
+order\_info = df\_order[['order\_id', 'product\_name', 'price']]
+\end{lstlisting}
+
+\subsection{选择行}
+
+\begin{lstlisting}[caption={使用iloc选择行}]
+# 选择第1行（索引为0）
+row = df\_order.iloc[0]
+
+# 选择前5行
+rows = df\_order.iloc[0:5]
+
+# 选择第10到20行
+rows = df\_order.iloc[10:20]
+\end{lstlisting}
+
+\subsection{条件筛选}
+
+\begin{lstlisting}[caption={条件筛选示例}]
+# 筛选数量大于1的订单
+large\_orders = df\_order[df\_order['quantity'] > 1]
+
+# 筛选特定商品
+iphone\_orders = df\_order[df\_order['product\_name'] == 'iPhone 14 Pro']
+\end{lstlisting}
+
+\begin{practicebox}[动手练习3：筛选缺失值数据]
+\textbf{任务：}使用03\_缺失值处理\_练习.csv，筛选出年龄缺失的员工。
+
+\begin{lstlisting}
+import pandas as pd
+
+df\_missing = pd.read\_csv('03\_缺失值处理\_练习.csv')
+
+# 筛选年龄缺失的行
+missing\_age = df\_missing[df\_missing['age'].isnull()]
+
+print("年龄缺失的员工：")
+print(missing\_age[['name', 'age', 'department']])
+
+print(f"\n共 {len(missing\_age)} 人年龄缺失")
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{数据清洗：处理缺失值}
+%========================================
+
+\subsection{检测缺失值}
+
+\begin{lstlisting}[caption={检测缺失值}]
+# 统计每列的缺失值数量
+print(df\_missing.isnull().sum())
+
+# 计算缺失值比例
+missing\_ratio = df\_missing.isnull().sum() / len(df\_missing) * 100
+print(missing\_ratio)
+\end{lstlisting}
+
+\subsection{填充缺失值}
+
+\begin{lstlisting}[caption={填充缺失值的方法}]
+# 用固定值填充
+df\_missing['gender'] = df\_missing['gender'].fillna('未知')
+
+# 用平均值填充（工资列）
+mean\_salary = df\_missing['salary'].mean()
+df\_missing['salary'] = df\_missing['salary'].fillna(mean\_salary)
+
+# 用中位数填充（年龄列）
+median\_age = df\_missing['age'].median()
+df\_missing['age'] = df\_missing['age'].fillna(median\_age)
+
+# 用众数填充（部门列）
+mode\_dept = df\_missing['department'].mode()[0]
+df\_missing['department'] = df\_missing['department'].fillna(mode\_dept)
+\end{lstlisting}
+
+\begin{practicebox}[动手练习4：处理缺失值]
+\textbf{任务：}使用03\_缺失值处理\_练习.csv，完成缺失值处理。
+
+\begin{lstlisting}
+import pandas as pd
+
+df = pd.read\_csv('03\_缺失值处理\_练习.csv')
+
+print("处理前缺失值统计：")
+print(df.isnull().sum())
+
+# 用中位数填充年龄
+median\_age = df['age'].median()
+df['age'] = df['age'].fillna(median\_age)
+
+# 用众数填充性别
+mode\_gender = df['gender'].mode()[0]
+df['gender'] = df['gender'].fillna(mode\_gender)
+
+# 用平均值填充工资
+mean\_salary = df['salary'].mean()
+df['salary'] = df['salary'].fillna(mean\_salary)
+
+print("\n处理后缺失值统计：")
+print(df.isnull().sum())
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{数据清洗：处理重复值}
+%========================================
+
+\subsection{检测和删除重复值}
+
+\begin{lstlisting}[caption={处理重复值}]
+# 检测重复值
+duplicates = df\_order.duplicated()
+print(f"重复行数：{duplicates.sum()}")
+
+# 查看重复的行
+duplicate\_rows = df\_order[df\_order.duplicated(keep=False)]
+print(duplicate\_rows)
+
+# 删除重复值（保留第一个）
+df\_order\_clean = df\_order.drop\_duplicates()
+\end{lstlisting}
+
+\begin{practicebox}[动手练习5：处理电商订单重复值]
+\textbf{任务：}使用01\_电商订单数据\_练习.csv，检测并删除重复订单。
+
+\begin{lstlisting}
+import pandas as pd
+
+df = pd.read\_csv('01\_电商订单数据\_练习.csv')
+
+print(f"原始数据行数：{len(df)}")
+
+# 检测重复值
+n\_duplicates = df.duplicated().sum()
+print(f"重复行数：{n\_duplicates}")
+
+# 查看重复的行
+duplicate\_rows = df[df.duplicated(keep=False)]
+print("\n重复的行：")
+print(duplicate\_rows[['order\_id', 'product\_name', 'price']])
+
+# 删除重复值
+df\_clean = df.drop\_duplicates()
+print(f"\n删除后行数：{len(df\_clean)}")
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{数据清洗：处理异常值}
+%========================================
+
+\subsection{检测异常值}
+
+\begin{lstlisting}[caption={使用IQR方法检测异常值}]
+# 计算IQR
+Q1 = df\_order['quantity'].quantile(0.25)
+Q3 = df\_order['quantity'].quantile(0.75)
+IQR = Q3 - Q1
+
+# 定义异常值范围
+lower\_bound = Q1 - 1.5 * IQR
+upper\_bound = Q3 + 1.5 * IQR
+
+# 找出异常值
+outliers = df\_order[(df\_order['quantity'] < lower\_bound) | 
+                    (df\_order['quantity'] > upper\_bound)]
+print(f"异常值数量：{len(outliers)}")
+\end{lstlisting}
+
+\subsection{处理异常值}
+
+\begin{lstlisting}[caption={处理异常值}]
+# 将负数数量修正为1
+df\_order.loc[df\_order['quantity'] < 0, 'quantity'] = 1
+\end{lstlisting}
+
+%========================================
+\section{数据格式转换}
+%========================================
+
+\subsection{字符串处理}
+
+\begin{lstlisting}[caption={处理价格列}]
+# 查看价格列的格式
+print(df\_order['price'].head())
+
+# 去除"元"字，转换为数值
+df\_order['price\_num'] = df\_order['price'].str.replace('元', '')
+df\_order['price\_num'] = df\_order['price\_num'].astype(float)
+\end{lstlisting}
+
+\subsection{处理手机号}
+
+\begin{lstlisting}[caption={标准化手机号}]
+# 去除横线
+df\_order['phone\_clean'] = df\_order['phone'].str.replace('-', '')
+\end{lstlisting}
+
+\begin{practicebox}[动手练习6：清洗格式混乱数据]
+\textbf{任务：}使用04\_数据格式清洗\_练习.csv，清洗姓名和收入列。
+
+\begin{lstlisting}
+import pandas as pd
+
+df = pd.read\_csv('04\_数据格式清洗\_练习.csv')
+
+# 查看原始数据
+print("姓名处理前：")
+print(df['name'].head())
+
+# 去除姓名中的空格
+df['name\_clean'] = df['name'].str.strip()
+
+print("\n姓名处理后：")
+print(df['name\_clean'].head())
+
+# 处理收入（将12k转换为12000）
+def convert\_income(income\_str):
+    income\_str = str(income\_str).strip()
+    if 'k' in income\_str.lower():
+        number = float(income\_str.lower().replace('k', ''))
+        return number * 1000
+    else:
+        return float(income\_str)
+
+df['income\_num'] = df['income'].apply(convert\_income)
+
+print("\n收入转换：")
+print(df[['income', 'income\_num']].head(10))
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{数据分组与统计}
+%========================================
+
+\subsection{分组统计}
+
+\begin{lstlisting}[caption={按部门统计工资}]
+# 按部门分组，计算平均工资
+dept\_avg = df\_missing.groupby('department')['salary'].mean()
+print(dept\_avg)
+
+# 多列分组统计
+stats = df\_missing.groupby('department').agg({
+    'salary': ['mean', 'max', 'min'],
+    'age': 'mean'
+})
+print(stats)
+\end{lstlisting}
+
+\begin{practicebox}[动手练习7：统计电商数据]
+\textbf{任务：}使用01\_电商订单数据\_练习.csv，统计各商品的总销量。
+
+\begin{lstlisting}
+import pandas as pd
+
+df = pd.read\_csv('01\_电商订单数据\_练习.csv')
+
+# 处理价格（去除"元"字）
+df['price\_num'] = df['price'].str.replace('元', '').astype(float)
+
+# 计算订单金额
+df['total\_amount'] = df['price\_num'] * df['quantity']
+
+# 按商品分组统计
+product\_stats = df.groupby('product\_name').agg({
+    'quantity': 'sum',
+    'total\_amount': 'sum'
+}).sort\_values('total\_amount', ascending=False)
+
+print("商品销售统计TOP10：")
+print(product\_stats.head(10))
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{综合实战：完整数据处理流程}
+%========================================
+
+\subsection{案例：完整的电商订单数据处理}
+
+\begin{lstlisting}[caption={完整的数据处理流程}]
+import pandas as pd
+import numpy as np
+
+# 第1步：读取数据
+df = pd.read\_csv('01\_电商订单数据\_练习.csv')
+print(f"原始数据：{len(df)}行")
+
+# 第2步：删除重复值
+df = df.drop\_duplicates()
+print(f"删除重复后：{len(df)}行")
+
+# 第3步：处理缺失值
+df['user\_id'] = df['user\_id'].fillna('UNKNOWN')
+
+# 第4步：处理异常值（负数数量）
+df.loc[df['quantity'] < 0, 'quantity'] = 1
+
+# 第5步：格式转换（价格）
+df['price\_num'] = df['price'].str.replace('元', '').astype(float)
+
+# 第6步：格式转换（手机号）
+df['phone\_clean'] = df['phone'].str.replace('-', '')
+
+# 第7步：计算订单金额
+df['total\_amount'] = df['price\_num'] * df['quantity']
+
+# 第8步：统计分析
+product\_sales = df.groupby('product\_name')['total\_amount'].sum()
+print("\n各商品销售额：")
+print(product\_sales.sort\_values(ascending=False).head())
+
+# 第9步：保存结果
+df.to\_csv('清洗后的订单数据.csv', index=False)
+print("\n数据已保存到：清洗后的订单数据.csv")
+\end{lstlisting}
+
+%========================================
+\section{竞赛模拟题}
+%========================================
+
+\subsection{题目一：电商订单数据清洗}
+
+\begin{practicebox}[竞赛模拟题1]
+\textbf{题目要求：}
+
+使用\textbf{01\_电商订单数据\_练习.csv}，完成以下任务：
+
+\begin{enumerate}
+    \item 读取数据，查看基本信息（形状、列名、前5行）
+    \item 统计缺失值数量
+    \item 删除重复订单
+    \item 处理user\_id缺失值（用'UNKNOWN'填充）
+    \item 处理负数数量（修正为1）
+    \item 提取价格中的数字，转换为数值型
+    \item 标准化手机号格式（去除横线）
+    \item 计算每个订单的总金额（价格×数量）
+    \item 统计每个商品的总销售额和总销量
+    \item 保存清洗后的数据到新的CSV文件
+\end{enumerate}
+
+\textbf{参考答案：}
+\begin{lstlisting}
+import pandas as pd
+
+# 读取数据
+df = pd.read\_csv('01\_电商订单数据\_练习.csv')
+
+# 查看基本信息
+print(f"数据形状：{df.shape}")
+print(f"列名：{df.columns.tolist()}")
+print(df.head())
+
+# 统计缺失值
+print("\n缺失值统计：")
+print(df.isnull().sum())
+
+# 删除重复值
+df = df.drop\_duplicates()
+
+# 填充缺失值
+df['user\_id'] = df['user\_id'].fillna('UNKNOWN')
+
+# 处理异常值
+df.loc[df['quantity'] < 0, 'quantity'] = 1
+
+# 格式转换
+df['price\_num'] = df['price'].str.replace('元', '').astype(float)
+df['phone\_clean'] = df['phone'].str.replace('-', '')
+
+# 计算金额
+df['total\_amount'] = df['price\_num'] * df['quantity']
+
+# 统计分析
+product\_stats = df.groupby('product\_name').agg({
+    'total\_amount': 'sum',
+    'quantity': 'sum'
+}).sort\_values('total\_amount', ascending=False)
+
+print("\n商品销售统计：")
+print(product\_stats.head(10))
+
+# 保存结果
+df.to\_csv('清洗后的订单数据.csv', index=False)
+\end{lstlisting}
+\end{practicebox}
+
+\subsection{题目二：员工信息数据处理}
+
+\begin{practicebox}[竞赛模拟题2]
+\textbf{题目要求：}
+
+使用\textbf{03\_缺失值处理\_练习.csv}，完成以下任务：
+
+\begin{enumerate}
+    \item 读取数据，查看缺失值情况
+    \item 用中位数填充age列的缺失值
+    \item 用平均值填充salary列的缺失值
+    \item 用众数填充department列的缺失值
+    \item 用众数填充gender列的缺失值
+    \item 删除score列仍有缺失值的行
+    \item 按department分组，统计平均工资和平均年龄
+    \item 保存处理后的数据
+\end{enumerate}
+
+\textbf{参考答案：}
+\begin{lstlisting}
+import pandas as pd
+
+# 读取数据
+df = pd.read\_csv('03\_缺失值处理\_练习.csv')
+
+# 查看缺失值
+print("缺失值统计：")
+print(df.isnull().sum())
+
+# 用中位数填充年龄
+median\_age = df['age'].median()
+df['age'] = df['age'].fillna(median\_age)
+
+# 用平均值填充工资
+mean\_salary = df['salary'].mean()
+df['salary'] = df['salary'].fillna(mean\_salary)
+
+# 用众数填充部门和性别
+mode\_dept = df['department'].mode()[0]
+df['department'] = df['department'].fillna(mode\_dept)
+
+mode\_gender = df['gender'].mode()[0]
+df['gender'] = df['gender'].fillna(mode\_gender)
+
+# 删除score缺失的行
+df = df.dropna(subset=['score'])
+
+# 按部门统计
+dept\_stats = df.groupby('department').agg({
+    'salary': 'mean',
+    'age': 'mean'
+}).round(2)
+
+print("\n部门统计：")
+print(dept\_stats)
+
+# 保存结果
+df.to\_csv('处理后的员工数据.csv', index=False)
+\end{lstlisting}
+\end{practicebox}
+
+%========================================
+\section{代码速查表}
+%========================================
+
+\subsection{文件操作}
+
+\begin{lstlisting}[caption={读取和保存CSV}]
+# 读取CSV
+df = pd.read\_csv('文件名.csv')
+
+# 保存CSV
+df.to\_csv('新文件名.csv', index=False)
+\end{lstlisting}
+
+\subsection{数据查看}
+
+\begin{lstlisting}[caption={数据查看}]
+df.shape          # 形状（行数，列数）
+df.columns        # 列名
+df.head()         # 前5行
+df.tail()         # 后5行
+df.info()         # 详细信息
+df.describe()     # 统计摘要
+df.dtypes         # 数据类型
+\end{lstlisting}
+
+\subsection{数据选择}
+
+\begin{lstlisting}[caption={数据选择}]
+# 选择列
+df['列名']
+df[['列1', '列2']]
+
+# 选择行
+df.iloc[0]        # 第1行
+df.iloc[0:5]      # 前5行
+
+# 条件筛选
+df[df['列名'] > 值]
+\end{lstlisting}
+
+\subsection{数据清洗}
+
+\begin{lstlisting}[caption={数据清洗}]
+# 缺失值
+df.isnull().sum()                 # 统计缺失值
+df['列'].fillna(值)              # 填充缺失值
+df.dropna()                       # 删除缺失值
+
+# 重复值
+df.duplicated().sum()             # 统计重复值
+df.drop\_duplicates()              # 删除重复值
+
+# 异常值（IQR方法）
+Q1 = df['列'].quantile(0.25)
+Q3 = df['列'].quantile(0.75)
+IQR = Q3 - Q1
+outliers = df[(df['列'] < Q1-1.5*IQR) | (df['列'] > Q3+1.5*IQR)]
+\end{lstlisting}
+
+\subsection{数据转换}
+
+\begin{lstlisting}[caption={数据转换}]
+# 类型转换
+df['列'].astype(float)
+df['列'].astype(str)
+
+# 字符串处理
+df['列'].str.replace('旧', '新')
+df['列'].str.strip()
+
+# 应用函数
+df['新列'] = df['列'].apply(函数)
+\end{lstlisting}
+
+\subsection{分组统计}
+
+\begin{lstlisting}[caption={分组统计}]
+# 简单分组
+df.groupby('分组列')['统计列'].mean()
+
+# 多统计量
+df.groupby('分组列').agg({
+    '列1': 'mean',
+    '列2': ['mean', 'sum']
+})
+\end{lstlisting}
+
+\end{document}
